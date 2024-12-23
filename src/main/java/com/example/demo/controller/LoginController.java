@@ -25,8 +25,8 @@ public class LoginController {
 
         // 初始化 FirefoxOptions（可以选择无头模式）
         FirefoxOptions options = new FirefoxOptions();
-        options.addArguments("-private"); // 启用隐私模式（无痕模式）
-        options.addArguments("--disable-application-cache"); // 禁用应用缓存
+//        options.addArguments("-private"); // 启用隐私模式（无痕模式）
+//        options.addArguments("--disable-application-cache"); // 禁用应用缓存
 
         // 如果需要指定 Firefox 的二进制路径（例如，如果安装在非默认位置）
         options.setBinary("/Applications/Firefox.app/Contents/MacOS/firefox");
@@ -53,7 +53,20 @@ public class LoginController {
             passwordTab.click();
             System.err.println("进去");
 
-            Thread.sleep(50000);
+            // 输入手机号
+            WebElement phoneInput = driver.findElement(By.xpath("//input[@placeholder='手机号']"));
+            phoneInput.sendKeys("13418962569");
+
+// 输入密码
+            WebElement passwordInput = driver.findElement(By.xpath("//input[@placeholder='请输入密码']"));  // 假设有一个类似的密码输入框
+            passwordInput.sendKeys("Bryan20020225..");
+
+// 点击登录按钮
+            WebElement loginButton1 = driver.findElement(By.xpath("//button[@type='submit']"));
+            loginButton1.click();
+
+
+            Thread.sleep(500000);
         } catch (Exception e) {
             e.printStackTrace();
             return "登录过程出错：" + e.getMessage();
