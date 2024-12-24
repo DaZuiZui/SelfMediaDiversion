@@ -1,79 +1,96 @@
 package com.example.demo.controller;
 
+import com.example.demo.service.WebDriverService;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.firefox.FirefoxOptions;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.concurrent.TimeUnit;
+import java.io.*;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/login")
 public class LoginController {
 
-    /**
-     * loginForDouYin
-     * 模拟账号密码登录抖音
-     * @return
-     */
+    @Autowired
+    private WebDriverService webDriverService;
+
+    @PostMapping("/me")
+    public void gome() {
+        WebDriver driver = webDriverService.getDriver();
+        driver.get("https://www.douyin.com/user/self?from_tab_name=main&showTab=like");
+    }
+
+    @PostMapping("/gofriend")
+    public void gofriend() {
+        WebDriver driver = webDriverService.getDriver();
+        driver.get("https://www.douyin.com/friend");
+    }
+
     @GetMapping("/loginForDouYin")
     public String loginForDouYin() {
-        // 设置 GeckoDriver 路径（请将此路径替换为你的 geckodriver 绝对路径）
-        System.setProperty("webdriver.gecko.driver", "/Users/yangyida/Downloads/geckodriver");
-
-        // 初始化 FirefoxOptions（可以选择无头模式）
-        FirefoxOptions options = new FirefoxOptions();
-//        options.addArguments("-private"); // 启用隐私模式（无痕模式）
-//        options.addArguments("--disable-application-cache"); // 禁用应用缓存
-
-        // 如果需要指定 Firefox 的二进制路径（例如，如果安装在非默认位置）
-        options.setBinary("/Applications/Firefox.app/Contents/MacOS/firefox");
-
-        // 创建 FirefoxDriver 实例
-        WebDriver driver = new FirefoxDriver(options);
-        System.err.println("创建成功");
-
+        WebDriver driver = webDriverService.getDriver();
+        System.err.println(driver);
         try {
-            // 打开抖音登录页面
-            driver.get("https://www.douyin.com/?recommend=1");
-            System.err.println("打开成功");
+            // 打开目标页面
+            driver.get("https://www.douyin.com");
 
-            // 设置隐式等待时间
-            driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
-            System.err.println("等待加载元素进程完成30秒");
+            // 加载 Cookie（如果需要）
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("cookies.dat"))) {
+                Set<Cookie> cookies = (Set<Cookie>) ois.readObject();
+                for (Cookie cookie : cookies) {
+                    driver.manage().addCookie(cookie);
+                }
+                driver.navigate().refresh();
+            } catch (Exception e) {
+                System.err.println("未加载 Cookie：" + e.getMessage());
+            }
 
-            // 点击登录按钮
-            WebElement loginButton = driver.findElement(By.xpath("//button//p[contains(text(), '登录')]"));
-            loginButton.click();
-            System.err.println("进入登录页面");
-
-            WebElement passwordTab = driver.findElement(By.xpath("//li[@aria-label='密码登录']"));
-            passwordTab.click();
-            System.err.println("进去");
-
-            // 输入手机号
-            WebElement phoneInput = driver.findElement(By.xpath("//input[@placeholder='手机号']"));
-            phoneInput.sendKeys("13418962569");
-
-// 输入密码
-            WebElement passwordInput = driver.findElement(By.xpath("//input[@placeholder='请输入密码']"));  // 假设有一个类似的密码输入框
-            passwordInput.sendKeys("Bryan20020225..");
-
-// 点击登录按钮
-            WebElement loginButton1 = driver.findElement(By.xpath("//button[@type='submit']"));
-            loginButton1.click();
+            // 登录逻辑（如果未登录）
+            try {
+                WebElement loginButton = driver.findElement(By.xpath("//button//p[contains(text(), '登录')]"));
+                loginButton.click();
+                Thread.sleep(3000); // 等待 3 秒
+                WebElement passwordTab = driver.findElement(By.xpath("//li[@aria-label='密码登录']"));
+                passwordTab.click();
+                Thread.sleep(3000); // 等待 3 秒
+                WebElement phoneInput = driver.findElement(By.xpath("//input[@placeholder='手机号']"));
+                phoneInput.sendKeys("13418962569");
 
 
-            Thread.sleep(500000);
+                WebElement passwordInput = driver.findElement(By.xpath("//input[@placeholder='请输入密码']"));
+                passwordInput.sendKeys("Bryan20020225..");
+                WebElement loginButton1 = driver.findElement(By.xpath("//button[@type='submit']"));
+                loginButton1.click();
+
+                //todo 如果需要验证码
+                System.err.println("可以保存了");
+
+            } catch (Exception e) {
+                System.err.println("已登录，无需重复登录：" + e.getMessage());
+            }
+
+            // 保存 Cookie（如果需要）
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("cookies.dat"))) {
+                oos.writeObject(driver.manage().getCookies());
+            }
+
+            Thread.sleep(5000);
         } catch (Exception e) {
             e.printStackTrace();
             return "登录过程出错：" + e.getMessage();
         }
-            driver.quit();
 
-
-        return "";
+        return "登录完成！";
     }
+
+    @GetMapping("/quitDriver")
+    public String quitDriver() {
+        webDriverService.quitDriver();
+        return "浏览器已退出";
+    }
+
 }
